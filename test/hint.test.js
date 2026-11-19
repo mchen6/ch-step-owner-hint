@@ -1,9 +1,12 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-require('./support');
 const {ownerHint} = require('../lib/hint');
-const hint = require('../handlers/ownerService/hint');
+const {CountinghouseError} = require('countinghouse/lib/countinghouse-error');
+// the handler as the runtime calls it: (input, ctx), ctx.error the runtime's
+const ctx = {error: (code, message, details) => CountinghouseError.module(code, message, details)};
+const handler = require('../handlers/ownerService/hint');
+const hint = Object.assign((input) => handler(input, ctx), handler);
 
 const FIRST = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
 const C2 = 'b'.repeat(40);
@@ -19,8 +22,8 @@ test('hint lists the first-seen author first and never an email', async () => {
       'hubot: author of bbbbbbb, a recent change before this failure'
     ]
   });
-  await assert.rejects(hint({firstSeen: {commit: FIRST, authorLogin: 'octo@example.com'}, stepCommits: []}), (err) => err.code === 'ARGUMENTS_INVALID');
-  await assert.rejects(hint({firstSeen: {commit: FIRST, authorLogin: null}, stepCommits: [{commit: C2, authorLogin: 'Octo Cat <octo@example.com>'}]}), (err) => err.code === 'ARGUMENTS_INVALID');
+  await assert.rejects(hint({firstSeen: {commit: FIRST, authorLogin: 'octo@example.com'}, stepCommits: []}), (err) => err.code === 'INPUT_REJECTED');
+  await assert.rejects(hint({firstSeen: {commit: FIRST, authorLogin: null}, stepCommits: [{commit: C2, authorLogin: 'Octo Cat <octo@example.com>'}]}), (err) => err.code === 'INPUT_REJECTED');
 });
 
 test('hint returns empty logins with an empty why when nothing is known', () => {
@@ -37,7 +40,7 @@ test('at most three logins, first-seen first, then recent changes in order, each
 });
 
 test('handler refuses what is not a GitHub login', async () => {
-  const invalid = (err) => err.code === 'ARGUMENTS_INVALID';
+  const invalid = (err) => err.code === 'INPUT_REJECTED';
   for (const login of ['', '-leading', 'has space', 'a'.repeat(40), 'x\ny', 7]) {
     await assert.rejects(hint({firstSeen: {commit: FIRST, authorLogin: login}, stepCommits: []}), invalid, JSON.stringify(login));
   }

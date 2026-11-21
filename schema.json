@@ -21,7 +21,7 @@
                     "anyOf": [
                       {
                         "type": "string",
-                        "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,38}(?:\\[bot\\])?$"
+                        "pattern": "^(?=.{1,39}(?:\\[bot\\])?$)[A-Za-z0-9][A-Za-z0-9-]*(?:_[A-Za-z0-9]+|\\[bot\\])?$"
                       },
                       {
                         "type": "null"
@@ -41,7 +41,7 @@
             ]
           },
           "stepCommits": {
-            "title": "recent commits before the failure, most relevant first",
+            "title": "other commits to name: changes before the failure, or later commits it recurred on (recurred: true); most relevant first",
             "type": "array",
             "items": {
               "type": "object",
@@ -54,12 +54,16 @@
                   "anyOf": [
                     {
                       "type": "string",
-                      "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,38}(?:\\[bot\\])?$"
+                      "pattern": "^(?=.{1,39}(?:\\[bot\\])?$)[A-Za-z0-9][A-Za-z0-9-]*(?:_[A-Za-z0-9]+|\\[bot\\])?$"
                     },
                     {
                       "type": "null"
                     }
                   ]
+                },
+                "recurred": {
+                  "title": "true: a later commit this failure also occurred on; otherwise a change before it",
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -84,7 +88,7 @@
             "maxItems": 3,
             "items": {
               "type": "string",
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,38}(?:\\[bot\\])?$"
+              "pattern": "^(?=.{1,39}(?:\\[bot\\])?$)[A-Za-z0-9][A-Za-z0-9-]*(?:_[A-Za-z0-9]+|\\[bot\\])?$"
             }
           },
           "why": {

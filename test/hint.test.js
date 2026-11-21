@@ -18,8 +18,8 @@ test('hint lists the first-seen author first and never an email', async () => {
   assert.deepStrictEqual(out, {
     logins: ['octocat', 'hubot'],
     why: [
-      'octocat: author of a1b2c3d, the commit where this failure first appeared',
-      'hubot: author of bbbbbbb, a recent change before this failure'
+      'octocat is the author of a1b2c3d, the commit where this failure first appeared',
+      'hubot is the author of bbbbbbb, a recent change before this failure'
     ]
   });
   await assert.rejects(hint({firstSeen: {commit: FIRST, authorLogin: 'octo@example.com'}, stepCommits: []}), (err) => err.code === 'INPUT_REJECTED');
@@ -64,4 +64,39 @@ test('logins are compared without case: one person is listed once', () => {
 test('legacy logins with a trailing or doubled hyphen are accepted', async () => {
   const {output} = await hint({firstSeen: {commit: FIRST, authorLogin: 'foo-'}, stepCommits: [{commit: C2, authorLogin: 'a--b'}]});
   assert.deepStrictEqual(output.logins, ['foo-', 'a--b']);
+});
+
+// The final pass on the packs (A2): an Enterprise Managed User's login holds
+// an underscore (shortcode_suffix).
+test('an Enterprise Managed User login (with an underscore) is a login', async () => {
+  const input = {firstSeen: {commit: FIRST, authorLogin: 'jdoe_acme'}, stepCommits: [{commit: C2, authorLogin: 'build_bot[bot]'}]};
+  const out = await hint(input);
+  assert.deepStrictEqual(out.output.logins, ['jdoe_acme', 'build_bot[bot]']);
+  const schema = require('../schema.json').ownerService.hint;
+  const login = new RegExp(schema.output.properties.logins.items.pattern);
+  assert.ok(login.test('jdoe_acme'));
+  assert.ok(new RegExp(schema.input.properties.firstSeen.anyOf[0].properties.authorLogin.anyOf[0].pattern).test('jdoe_acme'));
+  assert.ok(new RegExp(schema.input.properties.stepCommits.items.properties.authorLogin.anyOf[0].pattern).test('jdoe_acme'));
+  await assert.rejects(hint({firstSeen: {commit: FIRST, authorLogin: '_lead'}, stepCommits: []}), (err) => err.code === 'INPUT_REJECTED');
+});
+
+// A10: a commit after the first-seen one that the failure recurred on says so.
+test('a later commit the failure recurred on has its own reason', async () => {
+  const out = await hint({firstSeen: {commit: FIRST, authorLogin: 'octocat'}, stepCommits: [{commit: C2, authorLogin: 'hubot', recurred: true}, {commit: C3, authorLogin: 'three', recurred: false}]});
+  assert.deepStrictEqual(out.output.why, [
+    'octocat is the author of a1b2c3d, the commit where this failure first appeared',
+    'hubot is the author of bbbbbbb, a later commit this failure also occurred on',
+    'three is the author of ccccccc, a recent change before this failure'
+  ]);
+  await assert.rejects(hint({firstSeen: null, stepCommits: [{commit: C2, authorLogin: 'hubot', recurred: 'yes'}]}), (err) => err.code === 'INPUT_REJECTED');
+});
+
+// (a login is never followed by ':' or '=' in its reason: ch-step-redact,
+// which every reason passes, would read secret-agent: … as a secret's name
+// and value and mask the reason)
+test('a reason never reads as a name and a value, whatever the login', () => {
+  for (const login of ['secret-agent', 'token-bot', 'my-api-key', 'auth']) {
+    const {why} = ownerHint({firstSeen: {commit: FIRST, authorLogin: login}, stepCommits: []});
+    assert.ok(why[0].startsWith(`${login} is the author of `), why[0]);
+  }
 });

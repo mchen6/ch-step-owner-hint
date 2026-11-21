@@ -8,7 +8,7 @@
         "actionList": [
           {
             "name": "hint",
-            "description": "Takes the commit where a failure first appeared and the recent commits before it, each with its author's GitHub login or null, and returns at most three logins: the first-seen commit's author first, then the recent changes' authors in the order given, each once, with one sentence per login saying why it is there. Refuses anything that is not a GitHub login (an e-mail address, a display name), so none can pass through.",
+            "description": "Takes the commit where a failure first appeared and other commits to name (changes before it, or later commits the failure also occurred on, marked recurred: true), each with its author's GitHub login or null, and returns at most three logins: the first-seen commit's author first, then the other commits' authors in the order given, each once, with one sentence per login saying why it is there (\"<login> is the author of <commit>, …\"). Refuses anything that is not a GitHub login (an e-mail address, a display name), so none can pass through.",
             "input": {"schema": "/ownerService/hint/input"},
             "output": {"schema": "/ownerService/hint/output"},
             "fault": {"schema": "/fault/ownerService/hint/fault"}

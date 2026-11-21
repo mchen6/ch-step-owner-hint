@@ -77,7 +77,12 @@ test('an Enterprise Managed User login (with an underscore) is a login', async (
   assert.ok(login.test('jdoe_acme'));
   assert.ok(new RegExp(schema.input.properties.firstSeen.anyOf[0].properties.authorLogin.anyOf[0].pattern).test('jdoe_acme'));
   assert.ok(new RegExp(schema.input.properties.stepCommits.items.properties.authorLogin.anyOf[0].pattern).test('jdoe_acme'));
-  await assert.rejects(hint({firstSeen: {commit: FIRST, authorLogin: '_lead'}, stepCommits: []}), (err) => err.code === 'INPUT_REJECTED');
+  for (const bad of ['_lead', 'a_b_c', 'sk_live_abcdefghijklmnop', 'jdoe_', `${'a'.repeat(35)}_acme`]) {
+    await assert.rejects(hint({firstSeen: {commit: FIRST, authorLogin: bad}, stepCommits: []}), (err) => err.code === 'INPUT_REJECTED', bad);
+    assert.ok(!login.test(bad), bad);
+  }
+  assert.ok(login.test(`${'a'.repeat(34)}_acme`), '39 characters');
+  assert.ok(login.test(`${'a'.repeat(39)}[bot]`), 'a bot: 39 and [bot]');
 });
 
 // A10: a commit after the first-seen one that the failure recurred on says so.
@@ -94,7 +99,7 @@ test('a later commit the failure recurred on has its own reason', async () => {
 // (a login is never followed by ':' or '=' in its reason: ch-step-redact,
 // which every reason passes, would read secret-agent: … as a secret's name
 // and value and mask the reason)
-test('a reason never reads as a name and a value, whatever the login', () => {
+test('a reason starts with the login and a verb, never "<login>:"', () => {
   for (const login of ['secret-agent', 'token-bot', 'my-api-key', 'auth']) {
     const {why} = ownerHint({firstSeen: {commit: FIRST, authorLogin: login}, stepCommits: []});
     assert.ok(why[0].startsWith(`${login} is the author of `), why[0]);

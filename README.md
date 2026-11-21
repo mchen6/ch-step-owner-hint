@@ -1,6 +1,6 @@
 # @countinghouse/ch-step-owner-hint
 
-countinghouse step module: who might know about a CI failure, as GitHub logins only: the author of the commit where it first appeared and of recent changes.
+countinghouse step module: who might know about a CI failure, as GitHub logins only: the author of the commit where it first appeared, of recent changes, and of later commits it recurred on.
 
 **Status: preview.** Runs on [countinghouse](https://github.com/mchen6/countinghouse)
 8.0 or later (unreleased; the release that carries the remote client and

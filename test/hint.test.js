@@ -67,17 +67,18 @@ test('legacy logins with a trailing or doubled hyphen are accepted', async () =>
 });
 
 // The final pass on the packs (A2): an Enterprise Managed User's login holds
-// an underscore (shortcode_suffix).
+// an underscore: handle_shortcode (jdoe_acme).
 test('an Enterprise Managed User login (with an underscore) is a login', async () => {
-  const input = {firstSeen: {commit: FIRST, authorLogin: 'jdoe_acme'}, stepCommits: [{commit: C2, authorLogin: 'build_bot[bot]'}]};
+  const input = {firstSeen: {commit: FIRST, authorLogin: 'jdoe_acme'}, stepCommits: [{commit: C2, authorLogin: 'build-bot[bot]'}]};
   const out = await hint(input);
-  assert.deepStrictEqual(out.output.logins, ['jdoe_acme', 'build_bot[bot]']);
+  assert.deepStrictEqual(out.output.logins, ['jdoe_acme', 'build-bot[bot]']);
   const schema = require('../schema.json').ownerService.hint;
   const login = new RegExp(schema.output.properties.logins.items.pattern);
   assert.ok(login.test('jdoe_acme'));
-  assert.ok(new RegExp(schema.input.properties.firstSeen.anyOf[0].properties.authorLogin.anyOf[0].pattern).test('jdoe_acme'));
-  assert.ok(new RegExp(schema.input.properties.stepCommits.items.properties.authorLogin.anyOf[0].pattern).test('jdoe_acme'));
-  for (const bad of ['_lead', 'a_b_c', 'sk_live_abcdefghijklmnop', 'jdoe_', `${'a'.repeat(35)}_acme`]) {
+  const inputs = [schema.input.properties.firstSeen.anyOf[0].properties.authorLogin.anyOf[0].pattern, schema.input.properties.stepCommits.items.properties.authorLogin.anyOf[0].pattern];
+  for (const p of inputs) assert.strictEqual(p, schema.output.properties.logins.items.pattern);
+  assert.ok(new RegExp(inputs[0]).test('jdoe_acme'));
+  for (const bad of ['_lead', 'a_b_c', 'sk_live_abcdefghijklmnop', 'jdoe_', `${'a'.repeat(35)}_acme`, 'sk_abc123[bot]']) {
     await assert.rejects(hint({firstSeen: {commit: FIRST, authorLogin: bad}, stepCommits: []}), (err) => err.code === 'INPUT_REJECTED', bad);
     assert.ok(!login.test(bad), bad);
   }

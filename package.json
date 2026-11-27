@@ -1,6 +1,6 @@
 {
   "name": "@countinghouse/ch-step-owner-hint",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "countinghouse step module: who might know about a CI failure, as GitHub logins only: the author of the commit where it first appeared, of recent changes, and of later commits it recurred on.",
   "license": "Apache-2.0",
   "repository": {
